@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>공격덱</title>
+
+<style>
+
+body{
+    font-family: Arial, sans-serif;
+    background:#1f2430;
+    color:white;
+    margin:0;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+}
+
+.back{
+    margin-bottom:20px;
+}
+
+.card{
+    background:#2b3245;
+    padding:15px;
+    border-radius:15px;
+    margin-bottom:15px;
+    border:1px solid #3c4458;
+}
+.characters{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+}
+
+.character-card{
+    background:#343d52;
+    border:2px solid transparent;
+    border-radius:12px;
+    padding:10px;
+    text-align:center;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.character-card:hover{
+    border-color:#4f7cff;
+    transform:scale(1.05);
+}
+
+.character-card:hover{
+    border-color:#4f7cff;
+}
+
+.portrait{
+    width:80px;
+    height:80px;
+    background:#d9d9d9;
+    margin:0 auto 10px;
+    border-radius:10px;
+    overflow:hidden;
+}
+.selected-card{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:2px solid #4f7cff;
+    border-radius:10px;
+    padding:10px;
+    margin-bottom:10px;
+    background:white;
+}
+
+.selected-portrait{
+    width:50px;
+    height:50px;
+    background:#d9d9d9;
+    border-radius:8px;
+}
+
+.remove-btn{
+    margin-left:auto;
+}
+</style>
+
+</head>
+<body>
+
+<button class="back" onclick="location.href='index.html'">
+← 메인으로
+</button>
+
+<h1>⚔ 길드전 공격덱</h1>
+
+<div class="card">
+
+<h3>선택된 방어덱</h3>
+
+<div id="selected">
+선택된 캐릭터 없음
+</div>
+<br>
+
+
+<br>
+
+
+</div>
+
+
+
+<div class="card">
+
+<h3>캐릭터 목록</h3>
+
+<div class="characters" id="characterList">
+</div>
+
+</div>
+
+<div class="card">
+
+<h3>카운터덱 목록</h3>
+
+<div id="result">
+
+아직 검색하지 않음
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+let characters =
+JSON.parse(localStorage.getItem("characters"))
+|| [
+    "에반",
+    "루디",
+    "아일린"
+];
+
+let selectedCharacters = [];
+
+let guides =
+JSON.parse(localStorage.getItem("guides"))
+|| [];
+
+function renderCharacters(){
+
+    const list =
+        document.getElementById("characterList");
+
+    list.innerHTML = "";
+
+    characters.forEach(name => {
+
+        list.innerHTML += `
+        <div class="character-card"
+             onclick="selectCharacter('${name}')">
+
+            <div class="portrait">
+    <img
+        src="images/${name}.jpg"
+        style="
+        width:80px;
+        height:80px;
+        object-fit:cover;
+        border-radius:10px;
+        "
+        onerror="this.style.display='none'"
+    >
+</div>
+
+<div>${name}</div>
+
+        </div>
+        `;
+    });
+
+}
+
+function updateSelectedView(){
+
+    const selectedDiv =
+        document.getElementById("selected");
+
+    if(selectedCharacters.length === 0){
+
+        selectedDiv.innerHTML =
+            "선택된 캐릭터 없음";
+
+        document.getElementById("result").innerHTML =
+            "아직 검색하지 않음";
+
+        return;
+    }
+
+    selectedDiv.innerHTML = "";
+
+    selectedCharacters.forEach(name => {
+
+    
+    
+    
+      selectedDiv.style.display = "flex";
+selectedDiv.style.gap = "10px";
+selectedDiv.style.flexWrap = "wrap";
+
+selectedDiv.innerHTML += `
+<div style="
+background:#343d52;
+padding:8px;
+border-radius:10px;
+text-align:center;
+">
+
+        <img
+            src="images/${name}.jpg"
+            style="
+            width:50px;
+            height:50px;
+            object-fit:cover;
+            border-radius:8px;
+            "
+            onerror="this.style.display='none'"
+        >
+
+        <span>${name}</span>
+
+        <button onclick="removeCharacter('${name}')">
+            ❌
+        </button>
+
+    </div>
+    `;
+});
+
+}
+
+function removeCharacter(name){
+
+    selectedCharacters =
+        selectedCharacters.filter(
+            c => c !== name
+        );
+
+    updateSelectedView();
+
+    document.getElementById("result").innerHTML =
+        "아직 검색하지 않음";
+
+}
+
+function selectCharacter(name){
+
+    if(selectedCharacters.length >= 3){
+        alert("3명까지만 선택 가능합니다.");
+        return;
+    }
+
+    if(selectedCharacters.includes(name)){
+        return;
+    }
+
+    selectedCharacters.push(name);
+
+    updateSelectedView();
+
+    if(selectedCharacters.length === 3){
+
+        searchGuide();
+
+    }
+
+}
+
+function searchGuide(){
+
+    guides =
+    JSON.parse(localStorage.getItem("guides"))
+    || [];
+
+    const enemy =
+    [...selectedCharacters].sort();
+
+    const matchedGuides =
+    guides.filter(g => {
+
+        return JSON.stringify(
+            [...g.enemy].sort()
+        ) === JSON.stringify(enemy);
+
+    });
+
+    if(matchedGuides.length === 0){
+
+        document.getElementById("result")
+        .innerHTML =
+        "등록된 공략이 없습니다.";
+
+        return;
+    }
+
+    let html = "";
+
+    matchedGuides.forEach((guide,index)=>{
+
+       html += `
+<button
+style="
+width:100%;
+padding:15px;
+margin-bottom:10px;
+background:#4f7cff;
+color:white;
+border:none;
+border-radius:12px;
+font-size:16px;
+font-weight:bold;
+cursor:pointer;
+"
+        onclick="showGuide(${guides.indexOf(guide)})"
+        style="
+        width:100%;
+        padding:15px;
+        margin-bottom:10px;
+        ">
+        ${guide.title}
+        </button>
+        `;
+
+    });
+
+    document.getElementById("result")
+    .innerHTML = html;
+
+}
+
+function showGuide(index){
+
+    const guide = guides[index];
+
+    document.getElementById("result")
+    .innerHTML = `
+
+    <h3>${guide.title}</h3>
+
+    <h4>스킬순서</h4>
+
+    ${guide.skills.join("<br>")}
+
+    <br><br>
+
+    <h4>장비</h4>
+
+    ${guide.items.join("<br>")}
+
+    <br><br>
+
+    <h4>속공순서</h4>
+
+    ${guide.speed}
+    <br><br>
+
+<h4>메모</h4>
+
+${guide.memo || "메모 없음"}
+
+    <br><br>
+
+    <button onclick="searchGuide()">
+    ← 목록으로
+    </button>
+
+    `;
+}
+
+renderCharacters();
+
+
+</script>
+
+</body>
+</html>
