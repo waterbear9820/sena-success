@@ -1,20 +1,202 @@
 <!DOCTYPE html>
+
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>방어덱</title>
+<title>SENA성공 방어덱</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    background:#1f2430;
+    color:white;
+    margin:0;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+}
+
+.back{
+    margin-bottom:20px;
+}
+
+.card{
+    background:#2b3245;
+    padding:15px;
+    border-radius:15px;
+    margin-bottom:15px;
+    border:1px solid #3c4458;
+}
+
+.defense-item{
+    background:#343d52;
+    padding:15px;
+    border-radius:12px;
+    margin-bottom:10px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.defense-item:hover{
+    border:1px solid #4f7cff;
+}
+
+.detail{
+    display:none;
+    margin-top:10px;
+    padding:10px;
+    background:#1f2430;
+    border-radius:10px;
+}
+
+.label{
+    color:#4f7cff;
+    font-weight:bold;
+}
+</style>
+
 </head>
 
 <body>
 
-<button onclick="location.href='index.html'">
+<button class="back" onclick="location.href='index.html'">
 ← 메인으로
 </button>
 
-<h1>🛡 길드전 방어덱</h1>
+<h1>🛡 SENA성공 방어덱</h1>
 
-<p>방어덱 페이지</p>
+<div class="card">
+
+<h3>추천 방어덱</h3>
+
+<div id="defenseList">
+불러오는 중...
+</div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB1mVzVlotzO_SOW8EEZkYTdMfXEQ0QxrA",
+  authDomain: "sena-success.firebaseapp.com",
+  projectId: "sena-success",
+  storageBucket: "sena-success.appspot.com",
+  messagingSenderId: "467131130722",
+  appId: "1:467131130722:web:1c72ca31d052ee55afc23b"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function toggle(id){
+
+    const box = document.getElementById(id);
+
+    if(box.style.display === "block"){
+        box.style.display = "none";
+    }else{
+        box.style.display = "block";
+    }
+}
+
+function loadDefenses(){
+
+    db.collection("defenses")
+    .onSnapshot(snap=>{
+
+        let html = "";
+
+        snap.forEach(doc=>{
+
+            const d = doc.data();
+            const id = doc.id;
+
+            html += `
+            <div class="defense-item"
+                 onclick="toggle('${id}')">
+
+                <div style="
+display:flex;
+gap:10px;
+margin-bottom:10px;
+">
+
+${(d.heroes || []).map(hero => `
+<img
+src="images/${hero}.jpg"
+style="
+width:60px;
+height:60px;
+border-radius:10px;
+object-fit:cover;
+"
+onerror="this.style.display='none'"
+>
+`).join("")}
+
+</div>
+
+<b>
+${d.heroes?.join(" / ") || d.title}
+</b>
+
+                <div
+                class="detail"
+                id="${id}">
+
+                    <p>
+                    <span class="label">반지</span><br>
+                    ${d.ring || "-"}
+                    </p>
+
+                    <p>
+                    <span class="label">진형</span><br>
+                    ${d.formation || "-"}
+                    </p>
+
+                    <p>
+                    <span class="label">펫</span><br>
+                    ${d.pet || "-"}
+                    </p>
+
+                    <p>
+                    <span class="label">스킬순서</span><br>
+                    ${d.skills || "-"}
+                    </p>
+
+                    <p>
+                    <span class="label">설명 및 팁</span><br>
+                    ${d.memo || "-"}
+                    </p>
+
+                </div>
+
+            </div>
+            `;
+        });
+
+        if(html === ""){
+            html = "등록된 방어덱 없음";
+        }
+
+        document.getElementById(
+            "defenseList"
+        ).innerHTML = html;
+
+    });
+}
+
+loadDefenses();
+
+</script>
 
 </body>
 </html>

@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>관리자</title>
+<title>SENA성공 관리자</title>
 
 <style>
-
 body{
     font-family:Arial,sans-serif;
     background:#f4f4f4;
@@ -20,570 +19,427 @@ body{
     margin-bottom:15px;
 }
 
-input{
+input, textarea{
     width:100%;
     padding:10px;
     margin-top:10px;
     margin-bottom:10px;
+    box-sizing:border-box;
 }
 
 button{
     padding:10px;
     cursor:pointer;
 }
-
 </style>
 </head>
+
 <body>
 
-<h1>⚙ 관리자 페이지</h1>
+<h1>⚙ SENA성공 관리자</h1>
 
+<!-- 캐릭터 -->
 <div class="card">
-
 <h3>캐릭터 추가</h3>
 
-<input
-type="text"
-id="characterName"
-placeholder="캐릭터 이름">
+<input id="characterName" placeholder="캐릭터 이름">
 
-<button onclick="addCharacter()">
-캐릭터 추가
-</button>
-<br><br>
 
-<input
-type="file"
-id="importCharactersFile">
+<button onclick="addCharacter()">캐릭터 추가</button>
 
-<button onclick="importCharacters()">
-캐릭터 복원
-</button>
-
-</div>
-
-<div class="card">
-
-<h3>현재 캐릭터</h3>
-
+<h4>현재 캐릭터</h4>
 <div id="characterList"></div>
-<br>
-
-<button onclick="exportCharacters()">
-캐릭터 백업
-</button>
-
 </div>
-<div class="card">
 
+<!-- 공략 -->
+<div class="card">
 <h3>공략 추가</h3>
 
-<input
-type="text"
-id="enemy1"
-placeholder="상대 캐릭터 1">
+<input id="enemy1" placeholder="상대 1">
+<input id="enemy2" placeholder="상대 2">
+<input id="enemy3" placeholder="상대 3">
 
-<input
-type="text"
-id="enemy2"
-placeholder="상대 캐릭터 2">
+<input id="guideTitle" placeholder="공략 제목">
 
-<input
-type="text"
-id="enemy3"
-placeholder="상대 캐릭터 3">
+<input id="guideSkills" placeholder="스킬 (쉼표)">
+<input id="guideItems" placeholder="장비 (쉼표)">
+<input id="guideSpeed" placeholder="속공">
 
-<input
-type="text"
-id="guideTitle"
-placeholder="카운터덱 이름">
+<textarea id="guideMemo" placeholder="메모"></textarea>
 
-<input
-type="text"
-id="guideSkills"
-placeholder="스킬순서 (쉼표로 구분)">
-
-<input
-type="text"
-id="guideItems"
-placeholder="장비 (쉼표로 구분)">
-
-<input
-type="text"
-id="guideSpeed"
-placeholder="속공순서">
-<textarea
-id="guideMemo"
-placeholder="공략 메모"
-style="
-width:100%;
-height:120px;
-margin-top:10px;
-"></textarea>
-
-<button onclick="addGuide()">
-공략 저장
-</button>
-
+<button id="guideBtn" onclick="addGuide()">공략 저장</button>
 </div>
 
 <div class="card">
+<h3>공략 목록</h3>
+<div id="guideList"></div>
+<div class="card">
+<h3>방어덱 목록</h3>
+<div id="defenseList"></div>
+</div>
+</div>
+<div class="card">
 
-<h3>등록된 공략</h3>
+<h3>방어덱 추가</h3>
 
-<div id="guideList">
-공략 없음
+<input id="defHero1" placeholder="영웅 1">
+<input id="defHero2" placeholder="영웅 2">
+<input id="defHero3" placeholder="영웅 3">
+
+<input id="defRing" placeholder="추천 반지">
+
+<input id="defFormation" placeholder="추천 진형">
+
+<input id="defPet" placeholder="추천 펫">
+
+<input id="defSkills" placeholder="스킬 순서">
+
+<textarea id="defMemo" placeholder="설명 및 팁"></textarea>
+
+<button onclick="addDefense()">
+방어덱 저장
+</button>
+
 </div>
 
-<br>
 
-<button onclick="exportGuides()">
-공략 백업
-</button>
-<br><br>
-
-<input
-type="file"
-id="importGuidesFile">
-
-<button onclick="importGuides()">
-공략 복원
-</button>
-</div>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB1mVzVlotzO_SOW8EEZkYTdMfXEQ0QxrA",
+  authDomain: "sena-success.firebaseapp.com",
+  projectId: "sena-success",
+  storageBucket: "sena-success.appspot.com",
+  messagingSenderId: "467131130722",
+  appId: "1:467131130722:web:1c72ca31d052ee55afc23b"
+};
 
-let characters =
-JSON.parse(localStorage.getItem("characters"))
-|| [];
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+let editingGuideId = null;
 
-function renderCharacters(){
-    characters.sort((a,b)=>
-    a.localeCompare(b,'ko')
-);
-    const list =
-    document.getElementById("characterList");
+/* =========================
+   캐릭터
+========================= */
 
-    list.innerHTML="";
+async function addCharacter(){
 
-    characters.forEach(name=>{
+    const name = document.getElementById("characterName").value.trim();
 
-        list.innerHTML += `
-        <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        margin-bottom:8px;
-        padding:10px;
-        background:#f5f5f5;
-        border-radius:8px;
-        ">
+    if(!name) return;
 
-            <span>${name}</span>
-
-            <button
-            onclick="deleteCharacter('${name}')">
-            삭제
-            </button>
-
-        </div>
-        `;
-
+    await db.collection("characters").add({
+        name: name
     });
 
+    alert("캐릭터 추가 완료");
+
+    document.getElementById("characterName").value = "";
+
+    loadCharacters();
 }
 
-function addCharacter(){
+async function loadCharacters(){
 
-    const name =
-    document.getElementById("characterName")
-    .value.trim();
+    const snap = await db.collection("characters").get();
 
-    if(!name){
-        return;
-    }
-    if(characters.includes(name)){
-    alert("이미 존재하는 캐릭터입니다.");
-    return;
-}
+    let docs = snap.docs;
 
-    characters.push(name);
-
-characters.sort((a,b)=>
-    a.localeCompare(b,'ko')
-);
-
-    localStorage.setItem(
-        "characters",
-        JSON.stringify(characters)
+    // 🔥 이름 정렬 (개선 2)
+    docs.sort((a,b)=>
+        a.data().name.localeCompare(b.data().name,'ko')
     );
 
-    document.getElementById(
-        "characterName"
-    ).value="";
+    let html = "";
 
-    renderCharacters();
+    docs.forEach(doc=>{
+        const c = doc.data();
 
+        html += `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:5px 0;padding:10px;background:#eee;border-radius:8px;">
+            
+            <div style="display:flex;align-items:center;gap:10px;">
+            
+                <span>${c.name}</span>
+                <button onclick="deleteCharacter('${doc.id}')">
+삭제
+</button>
+            </div>
+
+        </div>`;
+    });
+
+    document.getElementById("characterList").innerHTML = html;
 }
 
-function deleteCharacter(name){
+async function deleteCharacter(id){
 
-    if(!confirm(name + " 삭제할까요?")){
-        return;
-    }
+    if(!confirm("캐릭터를 삭제할까요?")) return;
 
-    characters =
-    characters.filter(
-        c => c !== name
-    );
-    characters.sort((a,b)=>
-    a.localeCompare(b,'ko')
-);
+    await db.collection("characters").doc(id).delete();
 
-    localStorage.setItem(
-        "characters",
-        JSON.stringify(characters)
-    );
+    alert("캐릭터 삭제 완료");
 
-    renderCharacters();
-
+    loadCharacters();
 }
-function addGuide(){
+/* =========================
+   공략
+========================= */
 
-    let guides =
-    JSON.parse(localStorage.getItem("guides"))
-    || [];
+async function addGuide(){
 
     const guide = {
-
         enemy:[
-            document.getElementById("enemy1").value.trim(),
-            document.getElementById("enemy2").value.trim(),
-            document.getElementById("enemy3").value.trim()
+            document.getElementById("enemy1").value,
+            document.getElementById("enemy2").value,
+            document.getElementById("enemy3").value
         ],
-
-        title:
-        document.getElementById("guideTitle").value.trim(),
-
-        skills:
-        document.getElementById("guideSkills")
-        .value
-        .split(","),
-
-        items:
-        document.getElementById("guideItems")
-        .value
-        .split(","),
-
-        speed:
-document.getElementById("guideSpeed").value.trim(),
-
-memo:
-document.getElementById("guideMemo").value.trim()
-
+        title: document.getElementById("guideTitle").value,
+        skills: document.getElementById("guideSkills").value.split(","),
+        items: document.getElementById("guideItems").value.split(","),
+        speed: document.getElementById("guideSpeed").value,
+        memo: document.getElementById("guideMemo").value
     };
 
-   const editIndex =
-localStorage.getItem("editGuideIndex");
+    if(editingGuideId){
 
-if(editIndex !== null){
+        await db.collection("guides")
+        .doc(editingGuideId)
+        .update(guide);
 
-    guides[editIndex] = guide;
+        alert("공략 수정 완료");
 
-    localStorage.removeItem(
-        "editGuideIndex"
-    );
+        editingGuideId = null;
+        document.getElementById("guideBtn").innerText="공략 저장";
 
-}else{
+    }else{
 
-    guides.push(guide);
+        await db.collection("guides").add(guide);
 
-}
+        alert("공략 저장 완료");
 
-    localStorage.setItem(
-        "guides",
-        JSON.stringify(guides)
-    );
-
-    alert("공략 저장 완료!");
-    renderGuides();
-
-}
-renderCharacters();
-function renderGuides(){
-
-    const guides =
-    JSON.parse(localStorage.getItem("guides"))
-    || [];
-
-    const guideList =
-    document.getElementById("guideList");
-
-    if(guides.length === 0){
-
-        guideList.innerHTML =
-        "등록된 공략 없음";
-
-        return;
     }
 
-    guideList.innerHTML = "";
+    document.getElementById("enemy1").value="";
+    document.getElementById("enemy2").value="";
+    document.getElementById("enemy3").value="";
+    document.getElementById("guideTitle").value="";
+    document.getElementById("guideSkills").value="";
+    document.getElementById("guideItems").value="";
+    document.getElementById("guideSpeed").value="";
+    document.getElementById("guideMemo").value="";
 
-    guides.forEach((guide,index)=>{
+    loadGuides();
+}
 
-        guideList.innerHTML += `
-        <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        padding:10px;
-        margin-bottom:8px;
-        background:#f5f5f5;
-        border-radius:8px;
-        ">
+async function loadGuides(){
 
-            <span>${guide.title}</span>
+    const snap = await db.collection("guides").get();
 
-            <button
-onclick="editGuide(${index})">
+    let html = "";
+
+    snap.forEach(doc=>{
+        const g = doc.data();
+
+        html += `
+<div style="
+padding:10px;
+background:#eee;
+margin-bottom:10px;
+border-radius:8px;
+">
+
+<b>${g.title}</b><br>
+${g.enemy ? g.enemy.join(", ") : "상대 없음"}
+
+<br><br>
+
+<button onclick="editGuide('${doc.id}')">
 수정
 </button>
 
-<button
-onclick="deleteGuide(${index})">
+<button onclick="deleteGuide('${doc.id}')">
+삭제
+</button>
+
+</div>
+`;
+    });
+
+    document.getElementById("guideList").innerHTML = html;
+}
+
+/* =========================
+   시작
+========================= */
+
+let editingDefenseId = null;
+
+async function addDefense(){
+
+    const defense = {
+
+        heroes:[
+            document.getElementById("defHero1").value,
+            document.getElementById("defHero2").value,
+            document.getElementById("defHero3").value
+        ],
+
+        ring: document.getElementById("defRing").value,
+        formation: document.getElementById("defFormation").value,
+        pet: document.getElementById("defPet").value,
+        skills: document.getElementById("defSkills").value,
+        memo: document.getElementById("defMemo").value
+    };
+
+    if(editingDefenseId){
+
+        await db.collection("defenses")
+        .doc(editingDefenseId)
+        .update(defense);
+
+        alert("방어덱 수정 완료");
+
+        editingDefenseId = null;
+
+    }else{
+
+        await db.collection("defenses").add(defense);
+
+        alert("방어덱 저장 완료");
+    }
+
+    document.getElementById("defHero1").value = "";
+    document.getElementById("defHero2").value = "";
+    document.getElementById("defHero3").value = "";
+    document.getElementById("defRing").value = "";
+    document.getElementById("defFormation").value = "";
+    document.getElementById("defPet").value = "";
+    document.getElementById("defSkills").value = "";
+    document.getElementById("defMemo").value = "";
+
+    loadDefenses();
+}
+
+async function loadDefenses(){
+
+    const snap = await db.collection("defenses").get();
+
+    let html = "";
+
+    snap.forEach(doc=>{
+
+        const d = doc.data();
+
+        html += `
+        <div style="
+        background:#eee;
+        padding:10px;
+        margin-bottom:10px;
+        border-radius:8px;
+        ">
+
+            <b>
+            ${(d.heroes || []).join(" / ")}
+            </b>
+
+            <br><br>
+
+            <button onclick="editDefense('${doc.id}')">
+수정
+</button>
+
+<button onclick="deleteDefense('${doc.id}')">
 삭제
 </button>
 
         </div>
         `;
-
     });
 
+    document.getElementById("defenseList").innerHTML = html;
 }
 
-function editGuide(index){
+async function editGuide(id){
 
-    const guides =
-    JSON.parse(localStorage.getItem("guides"))
-    || [];
+    const doc = await db.collection("guides").doc(id).get();
 
-    const guide = guides[index];
+    const g = doc.data();
 
-    document.getElementById("enemy1").value =
-        guide.enemy[0];
+    editingGuideId = id;
 
-    document.getElementById("enemy2").value =
-        guide.enemy[1];
+    document.getElementById("enemy1").value = g.enemy[0] || "";
+    document.getElementById("enemy2").value = g.enemy[1] || "";
+    document.getElementById("enemy3").value = g.enemy[2] || "";
 
-    document.getElementById("enemy3").value =
-        guide.enemy[2];
+    document.getElementById("guideTitle").value = g.title || "";
+    document.getElementById("guideSkills").value = (g.skills || []).join(",");
+    document.getElementById("guideItems").value = (g.items || []).join(",");
+    document.getElementById("guideSpeed").value = g.speed || "";
+    document.getElementById("guideMemo").value = g.memo || "";
 
-    document.getElementById("guideTitle").value =
-        guide.title;
+    document.getElementById("guideBtn").innerText="공략 수정 저장";
 
-    document.getElementById("guideSkills").value =
-        guide.skills.join(",");
-
-    document.getElementById("guideItems").value =
-        guide.items.join(",");
-
-    document.getElementById("guideSpeed").value =
-        guide.speed;
-    document.getElementById("guideMemo").value =
-    guide.memo || "";    
-
-    localStorage.setItem(
-        "editGuideIndex",
-        index
-    );
-
+    window.scrollTo({
+        top:0,
+        behavior:"smooth"
+    });
 }
 
-function importCharacters(){
+async function deleteGuide(id){
 
-    const file =
-    document.getElementById(
-        "importCharactersFile"
-    ).files[0];
+    if(!confirm("공략을 삭제할까요?")) return;
 
-    if(!file){
-        alert("파일을 선택하세요.");
-        return;
-    }
+    await db.collection("guides").doc(id).delete();
 
-    const reader =
-    new FileReader();
+    alert("공략 삭제 완료");
 
-    reader.onload = function(e){
-
-        try{
-
-            const imported =
-            JSON.parse(
-                e.target.result
-            );
-
-            characters = imported;
-
-            localStorage.setItem(
-                "characters",
-                JSON.stringify(characters)
-            );
-
-            renderCharacters();
-
-            alert(
-                "캐릭터 복원 완료!"
-            );
-
-        }catch{
-
-            alert(
-                "올바른 파일이 아닙니다."
-            );
-
-        }
-
-    };
-
-    reader.readAsText(file);
-
+    loadGuides();
 }
 
-function exportCharacters(){
+async function editDefense(id){
 
-    const data =
-    JSON.stringify(
-        characters,
-        null,
-        2
-    );
+    const doc = await db.collection("defenses").doc(id).get();
 
-    const blob =
-    new Blob(
-        [data],
-        {type:"application/json"}
-    );
+    const d = doc.data();
 
-    const url =
-    URL.createObjectURL(blob);
+    document.getElementById("defHero1").value = d.heroes?.[0] || "";
+    document.getElementById("defHero2").value = d.heroes?.[1] || "";
+    document.getElementById("defHero3").value = d.heroes?.[2] || "";
 
-    const a =
-    document.createElement("a");
+    document.getElementById("defRing").value = d.ring || "";
+    document.getElementById("defFormation").value = d.formation || "";
+    document.getElementById("defPet").value = d.pet || "";
+    document.getElementById("defSkills").value = d.skills || "";
+    document.getElementById("defMemo").value = d.memo || "";
 
-    a.href = url;
-    a.download = "characters.json";
+    editingDefenseId = id;
 
-    a.click();
-
-    URL.revokeObjectURL(url);
-
+    window.scrollTo({
+        top:document.body.scrollHeight,
+        behavior:"smooth"
+    });
 }
- function importGuides(){
 
-    const file =
-    document.getElementById(
-        "importGuidesFile"
-    ).files[0];
+async function deleteDefense(id){
 
-    if(!file){
-        alert("파일을 선택하세요.");
-        return;
-    }
+    if(!confirm("삭제할까요?")) return;
 
-    const reader =
-    new FileReader();
+    await db.collection("defenses").doc(id).delete();
 
-    reader.onload = function(e){
+    alert("삭제 완료");
 
-        try{
-
-            const guides =
-            JSON.parse(
-                e.target.result
-            );
-
-            localStorage.setItem(
-                "guides",
-                JSON.stringify(guides)
-            );
-
-            renderGuides();
-
-            alert(
-                "공략 복원 완료!"
-            );
-
-        }catch{
-
-            alert(
-                "올바른 파일이 아닙니다."
-            );
-
-        }
-
-    };
-
-    reader.readAsText(file);
-
-}   
-
-function exportGuides(){
-
-    const guides =
-    JSON.parse(localStorage.getItem("guides"))
-    || [];
-
-    const data =
-    JSON.stringify(
-        guides,
-        null,
-        2
-    );
-
-    const blob =
-    new Blob(
-        [data],
-        {type:"application/json"}
-    );
-
-    const url =
-    URL.createObjectURL(blob);
-
-    const a =
-    document.createElement("a");
-
-    a.href = url;
-    a.download = "guides.json";
-
-    a.click();
-
-    URL.revokeObjectURL(url);
-
+    loadDefenses();
 }
-function deleteGuide(index){
 
-    if(!confirm("공략을 삭제할까요?")){
-        return;
-    }
+loadCharacters();
+loadGuides();
+loadDefenses();
 
-    let guides =
-    JSON.parse(localStorage.getItem("guides"))
-    || [];
-
-    guides.splice(index,1);
-
-    localStorage.setItem(
-        "guides",
-        JSON.stringify(guides)
-    );
-
-    renderGuides();
-
-}
-renderCharacters();
-renderGuides();
-
+console.log("관리자 페이지 정상 실행");
 </script>
 
 </body>

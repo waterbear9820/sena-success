@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SENA성공</title>
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f2430">
+
 <style>
 
 body{
@@ -85,11 +88,32 @@ button:hover{
     display:none;
 }
 
+.admin-btn{
+    position:absolute;
+    top:15px;
+    right:15px;
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:50%;
+    background:#3c4458;
+    color:white;
+    cursor:pointer;
+    font-size:18px;
+    z-index:9999;
+}
+
+.card{
+    position:relative;
+}
+
 </style>
 </head>
 <body>
 
 <div class="card">
+
+<button class="admin-btn" onclick="adminLogin()">⚙</button>
 
     <div id="loginPage">
 
@@ -163,7 +187,40 @@ function login(){
 
 }
 
+function adminLogin(){
+
+    const pw = prompt("관리자 비밀번호");
+
+    if(pw === "1234"){
+        location.href = "admin.html";
+    }else if(pw !== null){
+        alert("비밀번호가 틀렸습니다.");
+    }
+
+}
+
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB1mVzVlotzO_SOW8EEZkYTdMfXEQ0QxrA",
+  authDomain: "sena-success.firebaseapp.com",
+  projectId: "sena-success",
+  storageBucket: "sena-success.appspot.com",
+  messagingSenderId: "467131130722",
+  appId: "1:467131130722:web:1c72ca31d052ee55afc23b"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 </script>
 
+<script>
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js");
+}
+</script>
 </body>
 </html>
